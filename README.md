@@ -1,0 +1,2 @@
+# Panorama
+Creating panorama image.
