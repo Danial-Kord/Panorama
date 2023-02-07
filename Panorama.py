@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 
-# Define the RANSAC function
 def RANSAC(src_pts, dst_pts, num_iterations, threshold):
     best_homography = None
     best_inliers = []
@@ -68,11 +67,8 @@ dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
 # Homography and RANSAC
 homography_matrix, inliers = RANSAC(src_pts, dst_pts, 100, 2500)
-#
-#
 
-#
-# # save Inliers
+# save Inliers
 inlier_matches = [good[i] for i in inliers]
 img_inliers = cv2.drawMatches(img1, kp1, img2, kp2, inlier_matches, None, flags = cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS, matchColor = (0,255,0))
 cv2.imwrite("2_inliers.png", img_inliers)
@@ -82,7 +78,7 @@ outlier_matches = [good[i] for i in range(len(good)) if i not in inliers]
 img_outliers = cv2.drawMatches(img1, kp1, img2, kp2, outlier_matches, None, flags = cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS, matchColor = (255,0,0))
 cv2.imwrite("2_outliers.png", img_outliers)
 
-homography_matrix, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 10000.0)
+homography_matrix, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 1.0)
 
 result = cv2.warpPerspective(img2, homography_matrix, (img1.shape[1] + img2.shape[1], img1.shape[0]))
 
@@ -98,3 +94,50 @@ dst[0:img1.shape[0], img1.shape[1]:img1.shape[1]+img2.shape[1]] = result[0:img1.
 cv2.imwrite("panorama.png", dst)
 
 # exit(0)
+
+# # Get the size of the combined panorama
+# rows1, cols1 = img1.shape[:2]
+# rows2, cols2 = img2.shape[:2]
+#
+# # Apply the homography to get the panorama
+# homography_matrix, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+#
+#
+# # Apply the homography matrix to the second image
+# h, w,_ = img1.shape
+# pts = np.float32([[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]).reshape(-1, 1, 2)
+# dst = cv2.perspectiveTransform(pts,homography_matrix)
+# print(dst)
+# print(dst.shape)
+#
+# # Calculate the size and offset of the panorama
+# h_panorama, w_panorama = h, w
+# offset_x, offset_y = 0, 0
+# for (x, y) in dst:
+#     x, y = x[0] + offset_x, y[0] + offset_y
+#     w_panorama = max(w_panorama, int(x))
+#     h_panorama = max(h_panorama, int(y))
+#
+# # Create an empty panorama image
+# panorama = np.zeros((h_panorama, w_panorama, 3), dtype=np.uint8)
+#
+# # Copy the first image to the panorama
+# panorama[offset_y:offset_y + h, offset_x:offset_x + w] = img1
+#
+# h_transformed, w_transformed, _ = img2.shape
+# pts = np.float32([[0, 0], [0, h_transformed-1], [w_transformed-1, h_transformed-1], [w_transformed-1, 0]]).reshape(-1, 1, 2)
+# dst = cv2.perspectiveTransform(pts, homography_matrix)
+#
+# min_x, min_y = np.inf, np.inf
+# for (x, y) in dst:
+#     x, y = x[0] + offset_x, y[0] + offset_y
+#     min_x, min_y = min(min_x, x), min(min_y, y)
+#
+# offset_x, offset_y = int(min_x), int(min_y)
+# panorama_roi = panorama[offset_y:offset_y + h_transformed, offset_x:offset_x + w_transformed]
+# gray2_warped = cv2.warpPerspective(img2, homography_matrix, (w_transformed, h_transformed))
+# mask = gray2_warped != 0
+# panorama_roi[mask] = gray2_warped[mask]
+#
+# cv2.imshow("Panorama", cv2.resize(panorama, (900,500)))
+# cv2.waitKey(0)
